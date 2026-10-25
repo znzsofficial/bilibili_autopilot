@@ -62,6 +62,7 @@ class Autopilot:
         self.get_config, self.generate, self.get_persona = get_config, generate, get_persona
         self.clock = clock
         self.share_video = share_video
+        self.reading_sink = None  # Optional local metadata sink; never a second scheduler/model.
         self.review = review
         self._selected_bvids: List[str] = []
         self.lock = asyncio.Lock()
@@ -954,6 +955,15 @@ class Autopilot:
                 },
                 ensure_ascii=False,
             )
+            # An automatic read can be interesting without a comment. Manual
+            # preview/reply checks never create autonomous chat candidates.
+            if not preview and self.reading_sink is not None and self.get_config() == cfg and not self.paused:
+                try:
+                    await self.reading_sink(uid, item, evidence, decision)
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    lines.append("阅读素材未能登记；不影响本次B站评论判断，不自动补发")
             if decision.should_comment and decision.interest >= cfg.comment.min_interest:
                 quote = decision.evidence_quote[:500]
                 canonical_quote = normalized(quote)

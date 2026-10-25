@@ -2,7 +2,21 @@
 
 <p align="center"><img src="icon.png" width="128" height="128" alt="B站自主浏览与评论图标"></p>
 
-> **Version:** 0.7.1 · MaiBot ≥ 1.3.10 · Python ≥ 3.10 · SDK ≥ 2.12.0
+> **Version:** 0.8.0 · MaiBot ≥ 1.3.10 · Python ≥ 3.10 · SDK ≥ 2.12.0
+
+本仓是[Neko维护fork](NEKO_FORK.md)，保留原作者、MIT与上游历史。沿用原插件ID/账号/数据，
+只能替换现有插件，不能与上游双开。新增Neko主动聊天素材桥，评论仍独立控制，不因接入而开启发布。
+
+## Neko生态接入
+
+`ecosystem.enabled=true`时，自动读到、有字幕/摘要依据且达到兴趣分的视频进入有限候选池，
+不以评论为前提、不新增一次总结模型调用，手动preview不产自主候选。Neko Proactive以独立开关和
+私有配对密钥领取，QQ群范围为双方授权交集，私聊不隐式授权。选片理由不是事实，字幕/摘要不冒充看过画面或听过音频。
+
+仍只有原主动调度器决定何时聊天；每视频/群最多一次素材机会，180秒临时提示只展示一次，
+下一轮清理，不把正文塞进持久任务原因。默认同群每天2次/至少180分钟可配置，是素材上限，不是发送目标。
+`shown/submitted/unknown`不代表QQ收到，未知不重放。生态模式抑制原直接评论后发群以免双发，
+B站评论/跟进仍按原开关和账本运行；不复制Life名单、不回放历史浏览。
 
 麦麦独立插件 `local.bilibili-autopilot`，由 [sakura桜花](https://github.com/namchengwuqiu) 维护。登录你指定的账号后，默认自动进入自主模式：麦麦先结合人设、兴趣、时间和最近的浏览反馈决定这次刷不刷 B 站，再结合视频内容决定要不要发表评论。
 
@@ -32,7 +46,7 @@
 在 MaiBot 根目录执行：
 
 ```sh
-git clone https://github.com/namchengwuqiu/bilibili_autopilot.git plugins/local_bilibili_autopilot
+git clone https://github.com/znzsofficial/bilibili_autopilot.git plugins/local_bilibili-autopilot
 ```
 
 重新加载插件或重启 MaiBot，Host 会根据清单安装依赖。需要手动安装时，在 MaiBot 使用的 Python 环境中执行 `uv pip install -r plugins/local_bilibili_autopilot/requirements.txt`。

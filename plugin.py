@@ -30,6 +30,7 @@ from .models import (
 )
 from .sharing import SHARE_OUTCOMES, VideoSharer
 from .state import StateStore
+from .reading_bridge import ReadingBridge, io as discovery_io
 from .webui import local_time, record_row
 
 
@@ -62,6 +63,7 @@ class BilibiliAutopilotPlugin(MaiBotPlugin):
         self._job_action = ""
         self._last_operation = "尚未执行页面或聊天指令"
         self._last_operation_ok = True
+        self.discovery = None
 
     async def on_load(self) -> None:
         data_dir = Path(self.ctx.paths.data_dir)
@@ -78,7 +80,12 @@ class BilibiliAutopilotPlugin(MaiBotPlugin):
             self.engine.may_publish,
             self._compose_share,
         )
-        self.engine.share_video = self.sharer.share
+        self.engine.share_video = self._share_after_comment
+        self.discovery = ReadingBridge(
+            self.ctx, lambda: self.config, lambda: self.client.uid if self.client else "",
+            lambda: self.engine is not None and not self.engine.paused, data_dir,
+        )
+        self.engine.reading_sink = self._remember_reading
         self._share_targets = await self.sharer.targets_summary()
         try:
             await self.client.load()
@@ -88,6 +95,8 @@ class BilibiliAutopilotPlugin(MaiBotPlugin):
         self.ctx.logger.info("B站自主浏览插件已加载；publish_enabled=%s", self.config.comment.publish_enabled)
 
     async def on_unload(self) -> None:
+        if self.discovery is not None:
+            self.discovery.closed = True
         # 保留用户的启停选择；取消发布中的任务会留下 pending，重启后要求核对。
         for task in (self._scheduler, self._job):
             if task is not None:
@@ -107,6 +116,23 @@ class BilibiliAutopilotPlugin(MaiBotPlugin):
             if not self.engine.paused or self.engine.pause_kind in {"initial", "login", "disabled"}:
                 await self.engine.pause("已在配置中禁用", kind="disabled")
         self._wake.set()
+
+    async def _remember_reading(self, uid, item, evidence, decision):
+        cfg = self.config
+        if (self.discovery is not None and not self.discovery.closed and cfg.plugin.enabled
+                and cfg.ecosystem.enabled and decision.interest >= cfg.ecosystem.min_interest):
+            await discovery_io(self.discovery.store.remember, uid, item, evidence, decision, time.time())
+
+    async def _share_after_comment(self, uid, item):
+        if self.config.ecosystem.enabled:
+            return "阅读素材由Neko主动聊天按需使用，不重复直接发群"
+        return await self.sharer.share(uid, item)
+
+    @API("discovery_v1", description="签名领取B站已读资料，不触发浏览、模型或发送", version="1", public=True)
+    async def discovery_api(self, packet=None):
+        if self.discovery is None:
+            return {"success": False, "error": "discovery_not_ready"}
+        return await self.discovery.handle(packet)
 
     async def _persona(self) -> str:
         profile = await self.ctx.config.get("personality", {})

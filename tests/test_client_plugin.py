@@ -6,6 +6,7 @@ from urllib.parse import parse_qs
 
 import asyncio
 import json
+import os
 import time
 import unittest
 
@@ -155,7 +156,11 @@ class ClientTests(unittest.IsolatedAsyncioTestCase):
         self.client.http = httpx.AsyncClient(transport=httpx.MockTransport(qr_response))
         with patch("local_bilibili_autopilot.client.user.get_self_info", AsyncMock(return_value={"mid": 1, "name": "测试"})):
             self.assertIn("已登录", await self.client.poll_login("test-key"))
-        self.assertEqual(self.client.credential_path.stat().st_mode & 0o777, 0o600)
+        if os.name == "posix":
+            self.assertEqual(self.client.credential_path.stat().st_mode & 0o777, 0o600)
+        else:
+            self.assertTrue(self.client.credential_path.is_file())
+            self.assertFalse(self.client.credential_path.is_symlink())
         self.assertEqual(json.loads(self.client.credential_path.read_text())["uid"], "1")
         self.assertEqual(len(self.client.http.cookies), 0)
         await self.client.logout()

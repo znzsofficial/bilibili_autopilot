@@ -453,6 +453,18 @@ class ShareSection(PluginConfigBase):
         return result
 
 
+class EcosystemSection(PluginConfigBase):
+    """交给现有主动插件的阅读素材，不发表评论、不直接发QQ。"""
+
+    __ui_label__ = "Neko主动聊天素材"
+    __ui_order__ = 6
+    enabled: bool = Field(default=False, description="允许Neko主动插件领取已读视频资料；启用后不再直接发送评论后群分享，群范围仍用上方share.qq_group_ids")
+    min_interest: float = Field(default=0.55, ge=0, le=1, description="进入聊天候选池的最低兴趣分，与评论门槛独立")
+    account_id: str = Field(default="", description="可选限定QQ机器人账号；同群多账号不明确时拒绝，不是B站UID")
+    daily_max: int = Field(default=2, ge=1, le=20, description="每个群每天最多提供几次素材（不等于已发送）")
+    interval_minutes: int = Field(default=180, ge=1, le=1440, description="同群两次素材机会至少间隔多少分钟；不改变主动插件原调度")
+
+
 class AutopilotConfig(PluginConfigBase):
     plugin: PluginSection = Field(default_factory=PluginSection)
     browse: BrowseSection = Field(default_factory=BrowseSection)
@@ -460,3 +472,4 @@ class AutopilotConfig(PluginConfigBase):
     model: ModelSection = Field(default_factory=ModelSection)
     replies: ReplySection = Field(default_factory=ReplySection)
     share: ShareSection = Field(default_factory=ShareSection)
+    ecosystem: EcosystemSection = Field(default_factory=EcosystemSection)

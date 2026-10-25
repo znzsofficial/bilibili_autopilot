@@ -18,8 +18,18 @@ def main() -> int:
     sys.modules[name] = package
     spec.loader.exec_module(package)
     suite = unittest.defaultTestLoader.discover(str(root / "tests"))
+    def ids(group):
+        for test in group:
+            if isinstance(test, unittest.TestSuite):
+                yield from ids(test)
+            else:
+                yield test.id()
+    discovered = set(ids(suite))
+    for group in ['test_autopilot', 'test_client_plugin', 'test_recovery', 'test_replies', 'test_sharing', 'test_webui', 'test_handoff', 'test_ecosystem']:
+        if not any(test.startswith(group + '.') for test in discovered):
+            raise RuntimeError('Missing required test group: ' + group)
     result = unittest.TextTestRunner(verbosity=2).run(suite)
-    return 0 if result.wasSuccessful() else 1
+    return 0 if result.testsRun and result.wasSuccessful() and not result.skipped else 1
 
 
 if __name__ == "__main__":
