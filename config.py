@@ -423,19 +423,19 @@ class ReplySection(PluginConfigBase):
 class ShareSection(PluginConfigBase):
     """评论成功后，将感兴趣的视频分享至已有 QQ 群聊。"""
 
-    __ui_label__ = "评论后分享视频"
+    __ui_label__ = "QQ群授权与旧评论后分享"
     __ui_order__ = 5
-    polish_enabled: bool = Field(default=True, description="每条分享最多调用一次模型润色，所有群复用文案")
-    polish_model: str = Field(default="", max_length=200, description="润色使用 Host 已配置的模型名，留空沿用评论任务")
-    polish_timeout_seconds: int = Field(default=30, ge=1, le=120, description="分享润色独立时限，包含正文依据复核")
-    total_timeout_seconds: int = Field(default=120, ge=10, le=360, description="分享草稿、润色及复核的总时限")
+    polish_enabled: bool = Field(default=True, description="仅旧评论后直接QQ分享：每条最多一次模型润色，各群复用；生态开启时本项不参与主动聊天")
+    polish_model: str = Field(default="", max_length=200, description="仅旧直接分享润色的宿主模型名，空为评论任务；不控制生态主动聊天模型")
+    polish_timeout_seconds: int = Field(default=30, ge=1, le=120, description="仅旧直接分享润色及复核的时限（秒）；生态模式不使用")
+    total_timeout_seconds: int = Field(default=120, ge=10, le=360, description="仅旧直接分享草稿/润色/复核的总时限（秒）；不是生态主动聊天超时")
     qq_group_ids: List[str] = Field(
         default_factory=list,
         max_length=10,
-        description="评论成功后分享视频的 QQ 群号；默认留空，不分享",
+        description="B站侧QQ群授权：生态模式与主动插件群名单取交集；旧模式为评论后直接分享目标，空为不授权",
         json_schema_extra={
-            "label": "分享视频的 QQ 群号",
-            "hint": "默认留空，不分享。每项填写一个麦麦已加入的 QQ 群号，最多 10 个。仅实际提交成功的视频一级评论触发，预览、跳过和跟进回复不触发。结合人设和视频内容生成一句随手分享的感想，再附上链接；同一视频对同一群只尝试分享一次，失败或结果未知不会自动重发。",
+            "label": "允许提供B站资料的 QQ 群号",
+            "hint": "每项填已有QQ群号，最多10个，空为不授权。ecosystem.enabled=true时仍须保留本名单，并与主动插件allowed_groups取交集；不因此授权私聊。生态关闭时才是原评论提交成功后的直接QQ分享目标。生态开启不运行直接分享润色，不新增发群定时器；失败/未知不自动重发。",
             "placeholder": "例如：123456789",
         },
     )
@@ -461,8 +461,8 @@ class EcosystemSection(PluginConfigBase):
     enabled: bool = Field(default=False, description="允许Neko主动插件领取已读视频资料；启用后不再直接发送评论后群分享，群范围仍用上方share.qq_group_ids")
     min_interest: float = Field(default=0.55, ge=0, le=1, description="进入聊天候选池的最低兴趣分，与评论门槛独立")
     account_id: str = Field(default="", description="可选限定QQ机器人账号；同群多账号不明确时拒绝，不是B站UID")
-    daily_max: int = Field(default=2, ge=1, le=20, description="每个群每天最多提供几次素材（不等于已发送）")
-    interval_minutes: int = Field(default=180, ge=1, le=1440, description="同群两次素材机会至少间隔多少分钟；不改变主动插件原调度")
+    daily_max: int = Field(default=2, ge=1, le=20, description="每群每天素材机会上限，按北京时间计；未确认机会保守占用，明确释放例外，不等于已发送或目标数")
+    interval_minutes: int = Field(default=180, ge=1, le=1440, description="同群素材机会最小间隔（分钟），非到点必发；仍须主动插件的时段/概率/冷却通过，不改变其调度")
 
 
 class AutopilotConfig(PluginConfigBase):

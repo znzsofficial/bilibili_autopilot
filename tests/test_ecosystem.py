@@ -71,6 +71,21 @@ class AutomaticReadTests(unittest.IsolatedAsyncioTestCase):
 
 
 class HandoffTests(unittest.IsolatedAsyncioTestCase):
+    def test_config_copy_distinguishes_active_group_grant_from_legacy_share_options(self):
+        schema = AutopilotConfig.model_json_schema()
+        share = schema["$defs"]["ShareSection"]["properties"]
+        self.assertIn("取交集", share["qq_group_ids"]["description"])
+        self.assertIn("仍须保留本名单", share["qq_group_ids"]["hint"])
+        self.assertIn("生态开启时本项不参与", share["polish_enabled"]["description"])
+        self.assertIn("不是生态主动聊天超时", share["total_timeout_seconds"]["description"])
+        cfg = AutopilotConfig()
+        self.assertEqual(cfg.share.polish_timeout_seconds, 30)
+        self.assertEqual(cfg.share.total_timeout_seconds, 120)
+        self.assertEqual(cfg.ecosystem.daily_max, 2)
+        self.assertEqual(cfg.ecosystem.interval_minutes, 180)
+        self.assertFalse(cfg.ecosystem.enabled)
+        self.assertFalse(cfg.comment.publish_enabled)
+
     async def asyncSetUp(self):
         self.temp = TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

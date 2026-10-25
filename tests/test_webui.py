@@ -60,7 +60,11 @@ class WebUITests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("credential", json.dumps(overview))
 
     async def test_page_uses_current_maximum_for_previously_saved_long_wait(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
         from local_bilibili_autopilot.webui import local_time
+        # A next-check display assertion must not depend on the wall clock being 09:00–23:00.
+        self.plugin.engine.clock = lambda: datetime(2026, 10, 25, 12, tzinfo=ZoneInfo('Asia/Shanghai')).timestamp()
         await self.plugin.engine.start()
         now = self.plugin.engine.clock()
         self.plugin.engine.store.record_browse_decision("1", now, False, "休息", now + 7200)
