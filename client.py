@@ -39,7 +39,17 @@ class PlatformError(Exception):
     def __init__(self, operation: str, code: int):
         self.operation = operation
         self.code = code
-        super().__init__(f"{operation}被平台拒绝（code={code}）")
+        if code in {-504, 408, 504}:
+            reason = "服务调用超时"
+        elif code in {-500, -503, 500, 502, 503}:
+            reason = "平台服务暂不可用"
+        elif code in {-101, -102, -111, -401, -403, 401, 403}:
+            reason = "登录或权限校验未通过"
+        elif code in {-352, -412, -509, -799, 412, 429}:
+            reason = "被平台风控或限流拦截"
+        else:
+            reason = "平台返回异常"
+        super().__init__(f"{operation}：{reason}（code={code}）")
 
 
 class VideoReadError(Exception):

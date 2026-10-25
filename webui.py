@@ -89,7 +89,10 @@ def record_row(row: Dict[str, Any], kind: str, timezone: str) -> Dict[str, Any]:
                   rpid=row["rpid"] if kind == "attempts" else "")
     result["summary"] = (result["comment"] or result["reason"])[:100]
     if detail.get('read_warning'):
-        result['reason'] += f"；读取提示：{detail['read_warning']}，已使用字幕"
+        warning = str(detail['read_warning'])
+        # Old ledger rows retain their original text; fix display without rewriting history.
+        warning = warning.replace('被平台拒绝（code=-504）', '服务调用超时（code=-504）')
+        result['reason'] += f"；读取提示：{warning}，已使用字幕"
     return result
 
 

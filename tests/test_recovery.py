@@ -145,6 +145,31 @@ class ReadingRecoveryTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(evidence.read_warning,'')
         self.resource.get_subtitle.assert_not_awaited()
 
+    async def test_summary_timeout_is_not_reported_as_permission_rejection(self):
+        self.resource.get_ai_conclusion.side_effect=ResponseCodeException(-504,'PRIVATE')
+        _,evidence=await self.client.understand(ITEM,12000)
+        self.assertIn('服务调用超时',evidence.read_warning)
+        self.assertNotIn('被平台拒绝',evidence.read_warning)
+        self.assertIn('code=-504',evidence.read_warning)
+
+    def test_platform_error_categories_are_safe_and_distinct(self):
+        for code,word in [(-504,'超时'),(-503,'暂不可用'),(-101,'登录'),(-403,'权限'),
+                          (-412,'风控'),(429,'限流'),(-12345,'返回异常')]:
+            with self.subTest(code=code):
+                error=PlatformError('读取 AI 摘要',code)
+                self.assertEqual(error.code,code)
+                self.assertIn(word,str(error))
+                self.assertIn(f'code={code}',str(error))
+
+    def test_old_warning_is_corrected_only_in_display_not_in_ledger(self):
+        detail=json.dumps({'title':'test','read_warning':'读取 AI 摘要被平台拒绝（code=-504）'})
+        row={'bvid':ITEM.bvid,'mode':'publish','outcome':'skipped','detail':detail,'ts':0}
+        displayed=record_row(row,'visits','Asia/Shanghai')
+        self.assertIn('服务调用超时',displayed['reason'])
+        self.assertIn('已使用字幕',displayed['reason'])
+        self.assertNotIn('被平台拒绝',displayed['reason'])
+        self.assertEqual(row['detail'],detail)
+
     async def test_http_risk_or_login_error_does_not_read_subtitles(self):
         for code in (401,403,412,429):
             with self.subTest(code=code):
