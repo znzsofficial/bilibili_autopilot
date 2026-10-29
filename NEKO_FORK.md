@@ -4,6 +4,16 @@ Upstream: [namchengwuqiu/bilibili_autopilot](https://github.com/namchengwuqiu/bi
 starting from `bf362a6364421a7c6ac3fcf90ad62f47a227d9a1` (0.7.1). Original MIT LICENSE,
 author attribution and history remain intact. Fork contributions: NekoLaska.
 
+0.9.0 integrates official stable tag `v0.8.0`, commit
+`0f15ff0ae44036a772cf3206a4faad36495ed162` (2026-10-28), including v0.7.2.
+The upstream version overlaps our original 0.8.0; maintenance versions remain independent.
+Comment candidates now use interest-only screening during cooldown/quota waits and
+independent selection before a fresh read/review. This is Bilibili comment scheduling,
+not a second QQ proactive trigger. Richer direct-share copy applies only outside
+ecosystem mode. No dependency, config-key or table-schema changes; only provable
+legacy capacity evictions gain the `evicted` label. Preserve current publication
+settings, credentials, every send/unknown ledger and discovery tombstone on updates.
+
 - Same `local.bilibili-autopilot` ID, runtime directory, credentials and original
   comment/reply/unknown ledgers. Replace the existing directory; never run two copies.
 - Comments and reply following retain upstream behavior. Publication is independently
